@@ -23,6 +23,7 @@ def get_gdp_data():
 
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
     DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
+    # st.write(DATA_FILENAME)   # 'data/gdp_data.csv'
     raw_gdp_df = pd.read_csv(DATA_FILENAME)
 
     MIN_YEAR = 1960
@@ -32,8 +33,8 @@ def get_gdp_data():
     # - Country Name
     # - Country Code
     # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
+    # - GDP for 1960, Names column is '1960'
+    # - GDP for 1961...
     # - GDP for 1962
     # - ...
     # - GDP for 2022
@@ -45,6 +46,14 @@ def get_gdp_data():
     # - GDP
     #
     # So let's pivot all those year-columns into two: Year and GDP
+    
+    # df.melt() преобразует Названия и Значения по нескольким столбцам в два столбца, unpivot wide to long
+    # st.write(raw_gdp_df.head(2))        # for debugging
+    # st.write(raw_gdp_df.melt(id_vars=['Country Code'],
+    #     value_vars=[str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)], 
+    #     var_name='Year', 
+    #     value_name='GDP',).head(5))     # for debugging
+    
     gdp_df = raw_gdp_df.melt(
         ['Country Code'],
         [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
@@ -86,14 +95,13 @@ from_year, to_year = st.slider(
 
 countries = gdp_df['Country Code'].unique()
 
-if not len(countries):
-    st.warning("Select at least one country")
-
 selected_countries = st.multiselect(
     'Which countries would you like to view?',
     countries,
     ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
+    
+if not len(selected_countries):
+    st.error("Select at least one country")
 ''
 ''
 ''
@@ -115,6 +123,13 @@ st.line_chart(
     y='GDP',
     color='Country Code',
 )
+st.bar_chart(filtered_gdp_df,
+    x='Year',
+    y='GDP',
+    stack=False,
+    color='Country Code',)
+
+# st.scatter_chart)
 
 ''
 ''
@@ -143,9 +158,10 @@ for i, country in enumerate(selected_countries):
             growth = f'{last_gdp / first_gdp:,.2f}x'
             delta_color = 'normal'
 
-        st.metric(
+        st.metric( 
             label=f'{country} GDP',
             value=f'{last_gdp:,.0f}B',
             delta=growth,
-            delta_color=delta_color
-        )
+            delta_color=delta_color, 
+            border=True,
+         )
